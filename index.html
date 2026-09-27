@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LonePixelDEV | Independent Game Developer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Inter:wght@400;600&family=Special+Elite&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0c0c0c;
+            --accent-red: #8b0000;
+            --bright-red: #ff1a1a;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
+            --border-color: #222222;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Horror Intro Screen Styles */
+        #intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.6s ease;
+        }
+
+        .intro-content {
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .intro-logo {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(139, 0, 0, 0.8);
+        }
+
+        .intro-logo span {
+            color: var(--bright-red);
+        }
+
+        .loading-bar-container {
+            width: 100%;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--bright-red);
+            box-shadow: 0 0 10px var(--bright-red);
+            transition: width 0.1s linear;
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            font-family: 'Special Elite', cursive;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        /* Jumpscare Flash Effect Class */
+        .jumpscare-flash {
+            animation: flashScare 0.3s ease-out forwards;
+        }
+
+        @keyframes flashScare {
+            0% { background-color: #000; filter: none; }
+            30% { background-color: #550000; transform: scale(1.01) skew(1deg); filter: contrast(150%) brightness(120%); }
+            60% { background-color: #200000; transform: scale(0.99) skew(-1deg); }
+            100% { background-color: #000; transform: none; filter: none; opacity: 0; pointer-events: none; }
+        }
+
+        /* Black brush background texture effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 50% 20%, rgba(139, 0, 0, 0.12) 0%, transparent 50%),
+                linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95));
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header & Navigation */
+        header {
+            background: rgba(8, 8, 8, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .logo-title {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 1.25rem;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-title span {
+            color: var(--bright-red);
+        }
+
+        nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: color 0.3s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--bright-red);
+        }
+
+        .lang-select {
+            background: #111;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Main Game Page Styling */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .game-logo-img {
+            max-width: 100%;
+            width: 450px;
+            height: auto;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 15px rgba(139, 0, 0, 0.4));
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+            font-family: 'Special Elite', cursive;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-play {
+            background-color: #000;
+            color: #fff;
+            border: 2px solid var(--bright-red);
+            padding: 12px 28px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(139, 0, 0, 0.3);
+        }
+
+        .btn-play:hover {
+            background-color: var(--bright-red);
+            box-shadow: 0 0 25px rgba(255, 26, 26, 0.6);
+        }
+
+        .indiedb-badge-wrapper {
+            display: inline-block;
+        }
+
+        /* Wall of Thanks Section */
+        .thanks-section {
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 2.5rem;
+        }
+
+        .thanks-section h3 {
+            font-family: 'Cinzel Decorative', cursive;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+            text-align: center;
+            color: var(--bright-red);
+        }
+
+        .thanks-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .video-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .video-card:hover {
+            border-color: var(--bright-red);
+            transform: translateY(-4px);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .apology-note {
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Social Icons Grid */
+        .social-section {
+            text-align: center;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 2.5rem;
+        }
+
+        .social-section h3 {
+            font-family: 'Cinzel Decorative', cursive;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .social-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .social-icon:hover {
+            background: var(--accent-red);
+            color: #fff;
+            border-color: var(--bright-red);
+            transform: translateY(-3px);
+        }
+
+        /* Biography Page Styling */
+        .bio-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem;
+            border-radius: 8px;
+            line-height: 1.7;
+        }
+
+        .bio-content h2 {
+            font-family: 'Cinzel Decorative', cursive;
+            color: var(--bright-red);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        .bio-content p {
+            margin-bottom: 1.2rem;
+            color: #ccc;
+        }
+
+        /* Policy Page Styling */
+        .policy-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .policy-content h2 {
+            font-family: 'Cinzel Decorative', cursive;
+            color: var(--bright-red);
+            margin-bottom: 1rem;
+        }
+
+        .policy-content h3 {
+            color: #fff;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-content p, .policy-content li {
+            color: #b0b0b0;
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .policy-content ul {
+            padding-left: 20px;
+        }
+
+        /* App-ads.txt Page Styling */
+        .ads-txt-box {
+            background: #000;
+            border: 1px solid var(--bright-red);
+            padding: 2rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: #00ff66;
+            margin: 2rem 0;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: rgba(5,5,5,0.9);
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 1rem; flex-direction: column; gap: 1rem; }
+            nav { gap: 1rem; flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Horror Intro Screen -->
+    <div id="intro-screen">
+        <div class="intro-content">
+            <div class="intro-logo">LonePixel<span>DEV</span></div>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+            <div class="loading-text" id="loadingText">LOADING HOSPITAL...</div>
+        </div>
+    </div>
+
+    <header>
+        <a href="/main" class="logo-title" onclick="route(event, '/main')">LonePixel<span>DEV</span></a>
+        <nav>
+            <a href="/main" id="nav-main" onclick="route(event, '/main')">Головна</a>
+            <a href="/biography" id="nav-bio" onclick="route(event, '/biography')">Біографія</a>
+            <a href="/policy" id="nav-policy" onclick="route(event, '/policy')">Політика конфіденційності</a>
+            <select class="lang-select" id="langSelector" onchange="changeLanguage(this.value)">
+                <option value="uk">UA</option>
+                <option value="en">EN</option>
+                <option value="ru">RU</option>
+                <option value="ro">RO</option>
+                <option value="de">DE</option>
+                <option value="id">ID</option>
+                <option value="pt">PT</option>
+                <option value="es">ES</option>
+            </select>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- MAIN SECTION -->
+        <section id="view-main" class="view-section">
+            <div class="hero">
+                <img src="Logo.png" alt="Eastern Scary Hospital: Part 1" class="game-logo-img" onerror="this.style.display='none'">
+                <p id="txt-subtitle">Independent 3D Mobile Horror Game Developer</p>
+                
+                <div class="cta-buttons">
+                    <a href="https://play.google.com/store/apps/details?id=com.LonePixelDEV.EasternScaryHospital1" target="_blank" class="btn-play">
+                        <i class="fa-brands fa-google-play"></i> <span id="txt-download">Google Play Store</span>
+                    </a>
+                    
+                    <div class="indiedb-badge-wrapper">
+                        <a href="https://www.indiedb.com/games/eastern-scary-hospitalpart-1" title="View Eastern Scary Hospital:Part 1 on IndieDB" target="_blank"><img src="https://button.indiedb.com/popularity/medium/games/92852.png" alt="Eastern Scary Hospital:Part 1" /></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wall of Thanks Section -->
+            <div class="thanks-section">
+                <h3 id="txt-thanks-title">Дошка подяки</h3>
+                <p class="thanks-subtitle" id="txt-thanks-sub">Велике дякую всім гравцям та блогерам за огляди та проходження Eastern Scary Hospital: Part 1!</p>
+                
+                <div class="videos-grid">
+                    <div class="video-card">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/xzEIhto4brA" title="YouTube video player" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/FqVIWGgEiQw" title="YouTube video player" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/JsdYycL6We8" title="YouTube video player" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/O8HQYaZ5y5k" title="YouTube video player" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/R175VYbSOPI" title="YouTube video player" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/4IRylHEYloc" title="YouTube video player" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="apology-note" id="txt-apology">(вибачте кого не додав:( )</p>
+            </div>
+
+            <div class="social-section">
+                <h3 id="txt-socials-title">Офіційні соціальні мережі</h3>
+                <div class="social-icons">
+                    <a href="https://www.youtube.com/@LonePixelDEV_360" target="_blank" class="social-icon" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="https://t.me/LonePixelDEV_TelegramOfficial" target="_blank" class="social-icon" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+                    <a href="https://www.tiktok.com/@lonepixeldevofficial_4e3" target="_blank" class="social-icon" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                    <a href="https://www.instagram.com/lonepixeldev_228e/" target="_blank" class="social-icon" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=61594530412243&" target="_blank" class="social-icon" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="https://x.com/sanek_dev678" target="_blank" class="social-icon" title="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="mailto:lonepixeldevsupport@ukr.net" class="social-icon" title="Email Support"><i class="fa-solid fa-envelope"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- BIOGRAPHY SECTION -->
+        <section id="view-biography" class="view-section">
+            <div class="bio-content">
+                <h2 id="bio-title">Біографія розробника</h2>
+                <p id="bio-p1">Я — незалежний мобільний розробник під псевдонімом <strong>LonePixelDEV</strong>, що створює атмосферні 3D інді-горор ігри для платформи Android.</p>
+                <p id="bio-p2">У своїй роботі я використовую рушій Unity та мову програмування C#. Більшість асетів та середовища для ігор я купую в офіційних магазинах і маркетплейсах, проте самостійно налаштовую всю логіку, інтерфейси, оптимізацію та головного монстра проєкту.</p>
+                <p id="bio-p3">Мої проєкти, зокрема серія <strong>Eastern Scary Hospital</strong>, розроблені для фанатів класичних мобільних психологічних хоррорів із моторошною атмосферою та цікавими загадками.</p>
+            </div>
+        </section>
+
+        <!-- POLICY SECTION -->
+        <section id="view-policy" class="view-section">
+            <div class="policy-content">
+                <h2>Privacy Policy</h2>
+                <p><strong>Last updated:</strong> September 24, 2026</p>
+                <p>LonePixelDEV (referred to as "I", "me", or "my") operates mobile applications for Android. This Privacy Policy applies to all mobile games and applications developed and published by LonePixelDEV (collectively referred to as the "Applications"). This page informs you of my policies regarding the collection, use, and disclosure of personal data when you use my Applications.</p>
+                <p>By downloading and using any of my Applications, you agree to the collection and use of information in accordance with this policy.</p>
+
+                <h3>1. Age Restriction and Content Rating</h3>
+                <p>My Applications specialize in the horror genre and contain intense, frightening, or mature themes.</p>
+                <p>All games developed by LonePixelDEV are intended strictly for audiences aged 16 and older (16+).</p>
+                <p>Due to the horror nature and mature themes, my Applications are not designed for, targeted at, or intended to attract children.</p>
+
+                <h3>2. Information Collection and Use</h3>
+                <p>My Applications are free to play and do not require user registration. I do not personally collect, store, or share any personally identifiable information (such as your name, email address, phone number, or precise location).</p>
+                <p>However, the Applications use third-party services that may collect information used to identify you.</p>
+
+                <h3>3. Third-Party Services and Analytics</h3>
+                <p>To provide game functionality, stability, and monetization, I use third-party Service Providers. These third parties have access to your Device Advertising ID and technical data (such as device model and OS version) solely to perform tasks on my behalf:</p>
+                <ul>
+                    <li><strong>Unity:</strong> My Applications are built using the Unity engine. Unity may collect non-personally identifiable information automatically to optimize game performance and analyze stability.</li>
+                    <li><strong>Google AdMob:</strong> I display banner and interstitial ads provided by AdMob. AdMob uses unique identifiers (like the Android Advertising ID) on your device to serve personalized and/or non-personalized ads.</li>
+                </ul>
+
+                <h3>4. Assets and Licenses</h3>
+                <p>The Applications include assets purchased from the Unity Asset Store or other legitimate marketplaces used under official licenses. These assets do not independently collect, store, or share any additional user data.</p>
+
+                <h3>5. Children's Privacy</h3>
+                <p>Given that my games are specialized horror experiences, my Services do not address anyone under the age of 13, and are restricted to users aged 16+.</p>
+
+                <h3>6. Changes to This Privacy Policy</h3>
+                <p>I may update my Privacy Policy from time to time. You are advised to review this page periodically for any changes.</p>
+
+                <h3>7. Contact Us</h3>
+                <p>If you have any questions or suggestions about my Privacy Policy, contact me:</p>
+                <p><strong>Email:</strong> <a href="mailto:lonepixeldevsupport@ukr.net" style="color:var(--bright-red);">lonepixeldevsupport@ukr.net</a></p>
+            </div>
+        </section>
+
+        <!-- APP-ADS.TXT SECTION -->
+        <section id="view-ads-txt" class="view-section">
+            <div class="policy-content" style="text-align: center;">
+                <h2>app-ads.txt (AdMob Verification)</h2>
+                <p>Цей файл використовується мережею Google AdMob для перевірки прав на показ реклами у мобільних додатках.</p>
+                <div class="ads-txt-box">
+                    google.com, pub-5286480816275173, DIRECT, f08c47fec0942fa0
+                </div>
+                <button onclick="route(event, '/main')" class="btn-play">На головну</button>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 LonePixelDEV. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Intro Animation Script
+        window.addEventListener('DOMContentLoaded', () => {
+            const bar = document.getElementById('loadingBar');
+            const intro = document.getElementById('intro-screen');
+            let width = 0;
+            
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    // Trigger light jumpscare flash
+                    intro.classList.add('jumpscare-flash');
+                    setTimeout(() => {
+                        intro.style.display = 'none';
+                    }, 300);
+                } else {
+                    width += Math.floor(Math.random() * 15) + 5;
+                    if (width > 100) width = 100;
+                    bar.style.width = width + '%';
+                }
+            }, 60);
+        });
+
+        const translations = {
+            uk: { 
+                navMain: "Головна", navBio: "Біографія", navPolicy: "Політика конфіденційності",
+                subtitle: "Незалежний розробник 3D мобільних хоррор ігор", download: "Google Play Store", socials: "Офіційні соціальні мережі",
+                thanksTitle: "Дошка подяки", thanksSub: "Велике дякую всім гравцям та блогерам за огляди та проходження Eastern Scary Hospital: Part 1!", apology: "(вибачте кого не додав:( )",
+                bioTitle: "Біографія розробника", 
+                bioP1: "Я — незалежний мобільний розробник під псевдонімом LonePixelDEV, що створює атмосферні 3D інді-горор ігри для платформи Android.", 
+                bioP2: "У своїй роботі я використовую рушій Unity та мову програмування C#. Більшість асетів та середовища для ігор я купую в офіційних магазинах і маркетплейсах, проте самостійно налаштовую всю логіку, інтерфейси, оптимізацію та головного монстра проєкту.", 
+                bioP3: "Мої проєкти, зокрема серія Eastern Scary Hospital, розроблені для фанатів класичних мобільних психологічних хоррорів із моторошною атмосферою та цікавими загадками." 
+            },
+            en: { 
+                navMain: "Home", navBio: "Biography", navPolicy: "Privacy Policy",
+                subtitle: "Independent 3D Mobile Horror Game Developer", download: "Google Play Store", socials: "Official Social Media",
+                thanksTitle: "Wall of Thanks", thanksSub: "Huge thanks to all players and content creators for reviews and walkthroughs of Eastern Scary Hospital: Part 1!", apology: "(sorry if I missed anyone:( )",
+                bioTitle: "Developer Biography", 
+                bioP1: "I am an independent mobile developer operating under the handle LonePixelDEV, creating atmospheric 3D indie horror games for Android.", 
+                bioP2: "In my work, I use the Unity engine and C#. Most game assets and environments are purchased from official stores and marketplaces, but I handle all game logic, interfaces, optimization, and the main monster myself.", 
+                bioP3: "My projects, particularly the Eastern Scary Hospital series, are built for fans of classic mobile psychological horror with an eerie atmosphere and engaging puzzles." 
+            },
+            ru: { 
+                navMain: "Главная", navBio: "Биография", navPolicy: "Политика конфиденциальности",
+                subtitle: "Независимый разработчик 3D мобильных хоррор игр", download: "Google Play Store", socials: "Официальные социальные сети",
+                thanksTitle: "Дошка благодарности", thanksSub: "Большое спасибо всем игрокам и блогерам за обзоры и прохождения Eastern Scary Hospital: Part 1!", apology: "(извините кого не добавил:( )",
+                bioTitle: "Биография разработчика", 
+                bioP1: "Я — независимый мобильный разработчик под псевдонимом LonePixelDEV, создающий атмосферные 3D инди-хоррор игры для Android.", 
+                bioP2: "В своей работе я использую движок Unity и C#. Большинство ассетов и окружения я покупаю в официальных магазинах, однако самостоятельно настраиваю всю логику, интерфейсы, оптимизацию и главного монстра проекта.", 
+                bioP3: "Мои проекты, в частности серия Eastern Scary Hospital, созданы для фанатов классических мобильных психологических хорроров с жуткой атмосферой и загадками." 
+            },
+            ro: { 
+                navMain: "Acasă", navBio: "Biografie", navPolicy: "Politica de confidențialitate",
+                subtitle: "Dezvoltator independent de jocuri horror mobile 3D", download: "Google Play Store", socials: "Rețele Sociale Oficiale",
+                thanksTitle: "Panou de Mulțumiri", thanksSub: "Mulțumiri mari tuturor jucătorilor și creatorilor pentru recenzii și gameplay la Eastern Scary Hospital: Part 1!", apology: "(scuze pe cine nu am adăugat:( )",
+                bioTitle: "Biografie Dezvoltator", 
+                bioP1: "Sunt un dezvoltator mobil independent sub pseudonimul LonePixelDEV, creând jocuri horror indie 3D atmosferice pentru Android.", 
+                bioP2: "În munca mea, folosesc motorul Unity și C#. Majoritatea asset-urilor sunt cumpărate din magazine oficiale, dar setez singur toată logica, interfețele, optimizarea și monstrul principal.", 
+                bioP3: "Proiectele mele, în special seria Eastern Scary Hospital, sunt dezvoltate pentru fanii jocurilor horror psihologice mobile clasice." 
+            },
+            de: { 
+                navMain: "Startseite", navBio: "Biografie", navPolicy: "Datenschutz",
+                subtitle: "Unabhängiger Entwickler von 3D-Mobile-Horrorspielen", download: "Google Play Store", socials: "Offizielle Soziale Netzwerke",
+                thanksTitle: "Dankeswand", thanksSub: "Vielen Dank an alle Spieler und Creator für Reviews und Walkthroughs von Eastern Scary Hospital: Part 1!", apology: "(tut mir leid, wen ich vergessen habe:( )",
+                bioTitle: "Entwicklerbiografie", 
+                bioP1: "Ich bin ein unabhängiger Mobilentwickler unter dem Namen LonePixelDEV, der atmosphärische 3D-Indie-Horrorspiele für Android entwickelt.", 
+                bioP2: "Ich verwende die Unity-Engine und C#. Die meisten Assets kaufe ich in offiziellen Stores, aber ich programmiere die Logik, Interfaces, Optimierung und das Hauptmonster selbst.", 
+                bioP3: "Meine Projekte, insbesondere die Eastern Scary Hospital-Reihe, sind für Fans klassischer mobiler Psychohorrorspiele konzipiert." 
+            },
+            id: { 
+                navMain: "Beranda", navBio: "Biografi", navPolicy: "Kebijakan Privasi",
+                subtitle: "Pengembang Game Horor Seluler 3D Independen", download: "Google Play Store", socials: "Media Sosial Resmi",
+                thanksTitle: "Papan Terima Kasih", thanksSub: "Terima kasih banyak kepada semua pemain dan kreator atas ulasan dan walkthrough Eastern Scary Hospital: Part 1!", apology: "(maaf yang belum sempat ditambahkan:( )",
+                bioTitle: "Biografi Pengembang", 
+                bioP1: "Saya adalah pengembang seluler independen di bawah nama LonePixelDEV, menciptakan game horor indie 3D yang atmosferik untuk Android.", 
+                bioP2: "Dalam pekerjaan saya, saya menggunakan engine Unity dan C#. Sebagian besar aset dibeli dari toko resmi, namun saya sendiri yang mengatur logika game, antarmuka, optimasi, dan monster utamanya.", 
+                bioP3: "Proyek saya, terutama seri Eastern Scary Hospital, dibuat untuk para penggemar horor psikologis seluler klasik." 
+            },
+            pt: { 
+                navMain: "Início", navBio: "Biografia", navPolicy: "Política de Privacidade",
+                subtitle: "Desenvolvedor Independente de Jogos de Terror Móvel 3D", download: "Google Play Store", socials: "Redes Sociais Oficiais",
+                thanksTitle: "Mural de Agradecimentos", thanksSub: "Muito obrigado a todos os jogadores e criadores pelas análises e gameplays de Eastern Scary Hospital: Part 1!", apology: "(desculpe quem eu acabei não adicionando:( )",
+                bioTitle: "Biografia do Desenvolvedor", 
+                bioP1: "Sou um desenvolvedor móvel independente sob o pseudônimo LonePixelDEV, criando jogos indie de terror 3D atmosféricos para Android.", 
+                bioP2: "No meu trabalho, uso a engine Unity e C#. A maioria dos assets é comprada em lojas oficiais, mas configuro toda a lógica, interfaces, otimização e o monstro principal sozinho.", 
+                bioP3: "Meus projetos, em particular a série Eastern Scary Hospital, são desenvolvidos para fãs de terror psicológico móvel clássico." 
+            },
+            es: { 
+                navMain: "Inicio", navBio: "Biografía", navPolicy: "Política de Privacidad",
+                subtitle: "Desarrollador Independiente de Juegos de Terror Móvil 3D", download: "Google Play Store", socials: "Redes Sociales Oficiales",
+                thanksTitle: "Muro de Agradecimientos", thanksSub: "¡Muchas gracias a todos los jugadores y creadores por los análisis y gameplays de Eastern Scary Hospital: Part 1!", apology: "(disculpas a quien no haya agregado:( )",
+                bioTitle: "Biografía del Desarrollador", 
+                bioP1: "Soy un desarrollador móvil independiente bajo el alias LonePixelDEV, creando juegos de terror indie 3D atmosféricos para Android.", 
+                bioP2: "Utilizo el motor Unity y C#. La mayoría de los assets los compro en tiendas oficiales, pero configuro toda la lógica, interfaces, optimización y el monstruo principal por mí mismo.", 
+                bioP3: "Mis proyectos, en particular la serie Eastern Scary Hospital, están diseñados para fanáticos del terror psicológico móvil clásico." 
+            }
+        };
+
+        function changeLanguage(lang) {
+            const t = translations[lang] || translations.uk;
+            document.getElementById('nav-main').innerText = t.navMain;
+            document.getElementById('nav-bio').innerText = t.navBio;
+            document.getElementById('nav-policy').innerText = t.navPolicy;
+            document.getElementById('txt-subtitle').innerText = t.subtitle;
+            document.getElementById('txt-download').innerText = t.download;
+            document.getElementById('txt-thanks-title').innerText = t.thanksTitle;
+            document.getElementById('txt-thanks-sub').innerText = t.thanksSub;
+            document.getElementById('txt-apology').innerText = t.apology;
+            document.getElementById('txt-socials-title').innerText = t.socials;
+            document.getElementById('bio-title').innerText = t.bioTitle;
+            document.getElementById('bio-p1').innerHTML = t.bioP1;
+            document.getElementById('bio-p2').innerHTML = t.bioP2;
+            document.getElementById('bio-p3').innerHTML = t.bioP3;
+            localStorage.setItem('lonepixel_lang', lang);
+        }
+
+        // SPA Router Logic
+        function route(event, path) {
+            if (event) event.preventDefault();
+            
+            if (path === '/' || path === '') path = '/main';
+            
+            if (path === '/app-ads.txt' || path === 'app-ads.txt') {
+                const isBot = navigator.userAgent.includes('Googlebot') || navigator.userAgent.includes('Mediapartners-Google') || navigator.userAgent.includes('AdsBot');
+                if (isBot) {
+                    document.body.innerHTML = "google.com, pub-5286480816275173, DIRECT, f08c47fec0942fa0";
+                    return;
+                }
+                history.pushState({}, '', '/app-ads.txt');
+                showSection('view-ads-txt');
+                updateActiveNav('/app-ads.txt');
+                window.scrollTo(0, 0);
+                return;
+            }
+
+            history.pushState({}, '', path);
+
+            if (path === '/main') {
+                showSection('view-main');
+            } else if (path === '/biography') {
+                showSection('view-biography');
+            } else if (path === '/policy') {
+                showSection('view-policy');
+            } else {
+                history.pushState({}, '', '/main');
+                showSection('view-main');
+            }
+            updateActiveNav(path);
+            window.scrollTo(0, 0);
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        function updateActiveNav(path) {
+            document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+            if (path === '/main') document.getElementById('nav-main').classList.add('active');
+            if (path === '/biography') document.getElementById('nav-bio').classList.add('active');
+            if (path === '/policy') document.getElementById('nav-policy').classList.add('active');
+        }
+
+        window.onpopstate = function() {
+            const currentPath = window.location.pathname;
+            route(null, currentPath);
+        };
+
+        window.onload = function() {
+            const savedLang = localStorage.getItem('lonepixel_lang') || 'uk';
+            document.getElementById('langSelector').value = savedLang;
+            changeLanguage(savedLang);
+
+            const currentPath = window.location.pathname;
+            if (currentPath === '/app-ads.txt') {
+                route(null, '/app-ads.txt');
+            } else if (currentPath === '/biography') {
+                route(null, '/biography');
+            } else if (currentPath === '/policy') {
+                route(null, '/policy');
+            } else {
+                route(null, '/main');
+            }
+        };
+    </script>
+</body>
+</html>
